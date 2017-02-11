@@ -1,4 +1,5 @@
-﻿Qt中调用OpenCV进行冲压排序算法测试（Windows 平台下）
+﻿Qt中调用OpenCV进行冲压排序算法测试（树莓派-Linux 平台下）
 
-IDE : Qt Creator 4.2.0
-视觉处理库 : OpenCV 3.1.0 
+IDE : Qt Creator 3.2.1
+QT	: Qt 5.3.2
+OpenCV	: 2.4.9 

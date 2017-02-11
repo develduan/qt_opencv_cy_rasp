@@ -30,11 +30,12 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     cyproc.h \
-    delay.h \
     globalParam.h \
     chongya.h
 
 FORMS    += mainwindow.ui
+
+
 
 INCLUDEPATH += /usr/include/c++/4.9.2
 

@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     TrackbarRorE_value = 0;
 
     //Alocate memery
+    m_cy = new cy;
     m_vid = new cv::VideoCapture;
     m_frame = new cv::Mat;
     m_rawframe = new cv::Mat;
@@ -28,8 +29,6 @@ MainWindow::MainWindow(QWidget *parent) :
     m_imgbwLabel = new QLabel(ui->scrollAreaBw);
     m_imgResultLabel = new QLabel(ui->scrollAreaResult);
     m_ROI = new cv::Rect();
-    m_cy = new cy;
-
 
     //ROI init
     connect(ui->spinBoxTop, SIGNAL(valueChanged(int)), this, SLOT(slot_setROI(int)));
@@ -80,7 +79,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sliderHoleR->setValue(20);
     ui->sliderS2H->setValue(0);
     ui->sliderH2H->setValue(0);
-
     ui->spinBoxX->setValue(0);
     ui->spinBoxY->setValue(0);
     ui->spinBoxL->setValue(320);
@@ -117,7 +115,8 @@ void MainWindow::slot_Proc()
 void MainWindow::slot_setThreshValue(int value)
 {
     QString str;
-    CY_bw_thresh = value;
+//    m_cy->CY_bw_thresh = value;
+    m_cy->set(_CY_bw_thresh, value);
     str = str.number(value);
     ui->labelThreshValue->setText(str);
 }
@@ -125,7 +124,8 @@ void MainWindow::slot_setThreshValue(int value)
 void MainWindow::slot_setHoleRValue(int value)
 {
     QString str;
-    CY_r = value;
+//    m_cy->CY_r = value;
+    m_cy->set(_CY_r, value);
     str = str.number(value);
     ui->labelHoleRValue->setText(str);
 }
@@ -133,15 +133,19 @@ void MainWindow::slot_setHoleRValue(int value)
 void MainWindow::slot_Invert(bool checked)
 {
     if(checked)
-        CY_img_invert = 1;
+//        m_cy->CY_img_invert = 1;
+        m_cy->set(_CY_img_invert, 1);
     else
-        CY_img_invert = 0;
+//        m_cy->CY_img_invert = 0;
+        m_cy->set(_CY_img_invert, 0);
 }
 
 void MainWindow::slot_setS2HValue(int value)
 {
     QString str;
-    CY_dist = value;
+//    m_cy->CY_dist = value;
+    m_cy->set(_CY_dist, value);
+
     str = str.number(value);
     ui->labelS2HValue->setText(str);
 }
@@ -149,7 +153,9 @@ void MainWindow::slot_setS2HValue(int value)
 void MainWindow::slot_setH2HValue(int value)
 {
     QString str;
-    CY_delta = value;
+//    m_cy->CY_delta = value;
+    m_cy->set(_CY_delta, value);
+
     str = str.number(value);
     ui->labelH2HValue->setText(str);
 }
@@ -157,52 +163,29 @@ void MainWindow::slot_setH2HValue(int value)
 void MainWindow::slot_setXValue(int value)
 {
 //    qDebug()<<"X: "<<value;
-    CY_ROI_x = value;
+//    m_cy->CY_ROI_x = value;
+    m_cy->set(_CY_ROI_x, value);
 }
 
 void MainWindow::slot_setYValue(int value)
 {
 //    qDebug()<<"Y: "<<value;
-    CY_ROI_y = value;
+//    m_cy->CY_ROI_y = value;
+    m_cy->set(_CY_ROI_y, value);
 }
 
 void MainWindow::slot_setLValue(int value)
 {
 //    qDebug()<<"L: "<<value;
-    CY_ROI_L = value;
+//    m_cy->CY_ROI_L = value;
+    m_cy->set(_CY_ROI_L, value);
 }
 
 void MainWindow::slot_setHValue(int value)
 {
 //    qDebug()<<"H: "<<value;
-    CY_ROI_H  = value;
-}
-
-void MainWindow::setImgLabel(const QString &fileName)
-{
-//    qDebug()<<fileName;
-
-    cv::VideoCapture vid;
-
-    if(!vid.open(0))
-    {
-        qDebug()<<"Can not open CAM!";
-        return;
-    }
-
-    cv::Mat frame;
-    vid>>frame;
-    cv::cvtColor(frame, frame, cv::COLOR_RGB2BGR);
-    QImage img(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
-    vid.release();
-
-    if (img.isNull())
-    {
-        qDebug()<<"Image is NULL!";
-    }
-
-    m_imgLabel->setPixmap(QPixmap::fromImage(img));
-    ui->scrollArea->setWidget(m_imgLabel);
+//    m_cy->CY_ROI_H  = value;
+    m_cy->set(_CY_ROI_H, value);
 }
 
 void MainWindow::slot_openCam()
@@ -238,6 +221,20 @@ void MainWindow::slot_updateImg()
     m_frame->copyTo(*m_rawframe);
 
     //ROI frame
+    /// ROI valid revise
+    if(m_ROI->x>m_frame->cols)
+        m_ROI->x = m_frame->cols;
+    if(m_ROI->y>m_frame->rows)
+        m_ROI->y = m_frame->rows;
+    if(m_ROI->x + m_ROI->width > m_frame->cols)
+    {
+        m_ROI->width = m_frame->cols-m_ROI->x;
+    }
+    if(m_ROI->y + m_ROI->height > m_frame->rows)
+    {
+        m_ROI->height = m_frame->rows-m_ROI->y;
+    }
+
     *m_bwframe = m_cy->resize2bw(*m_frame);
     *m_bwframe = (*m_bwframe)(*m_ROI);
     *m_roiframe = *m_bwframe;   //m_roiframe should be Binary img
@@ -247,10 +244,10 @@ void MainWindow::slot_updateImg()
 //    qDebug()<<m_ROI->x<<","<<m_ROI->y<<","<<m_ROI->width<<","<<m_ROI->height;
 
     cv::cvtColor(*m_frame, *m_frame, cv::COLOR_RGB2BGR);
-    QImage img(m_frame->data, m_frame->cols, m_frame->rows, m_frame->step, QImage::Format_RGB888);
+    QImage img(m_frame->data, m_frame->cols, m_frame->rows, int(m_frame->step), QImage::Format_RGB888);
 
     cv::cvtColor(*m_bwframe, *m_bwframe, cv::COLOR_GRAY2BGR);
-    QImage imgbw(m_bwframe->data, m_bwframe->cols, m_bwframe->rows, m_bwframe->step, QImage::Format_RGB888);
+    QImage imgbw(m_bwframe->data, m_bwframe->cols, m_bwframe->rows, int(m_bwframe->step), QImage::Format_RGB888);
 
     if (img.isNull() || imgbw.isNull())
     {
@@ -277,25 +274,16 @@ void MainWindow::slot_mainProc()
 
         ///Display result
         cv::cvtColor(resultFrame, resultFrame, cv::COLOR_GRAY2BGR);
-        QImage imgResult(resultFrame.data, resultFrame.cols, resultFrame.rows, resultFrame.step, QImage::Format_RGB888);
+        QImage imgResult(resultFrame.data, resultFrame.cols, resultFrame.rows, int(resultFrame.step), QImage::Format_RGB888);
         m_imgResultLabel->setPixmap(QPixmap::fromImage(imgResult));
         ui->scrollAreaResult->setWidget(m_imgResultLabel);
 
-//        ///Rad table
-//        int i=0;
-//        while(RadArray[i].x>0&&RadArray[i].y>0 && i<CY_maxStep+1)
-//        {
-//            setTable(i, RadArray[i].x, RadArray[i].y);
-//            i++;
-//        }
         /// Rad table
-        for(int i=0; i<m_cy->voutf.length(); i++)
+        ui->tableResult->clearContents();
+        for(int i=0; i<m_cy->get_voutf().length(); i++)
         {
-            setTable(i, m_cy->voutf[i].x, m_cy->voutf[i].y);
+            setTable(i, m_cy->get_voutf()[i].x, m_cy->get_voutf()[i].y);
         }
-
-
-
     }
     if (TrackbarRorE_value)
     {
@@ -308,6 +296,11 @@ void MainWindow::slot_setROI(int value)
     QString strName;
     strName = this->sender()->objectName();
     qDebug()<<strName;
+
+    /// Value valid check step 1
+    if(value<0)
+        value = 0;
+
     if(strName == "spinBoxTop")
     {
         m_ROI->y = value;
@@ -328,7 +321,6 @@ void MainWindow::slot_setROI(int value)
     {
         qDebug()<<"set ROI error!";
     }
-
 }
 
 void MainWindow::setTable(int id, double x, double y)
